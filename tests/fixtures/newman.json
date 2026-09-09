@@ -1,0 +1,28 @@
+{
+  "run": {
+    "collection": { "name": "Users API" },
+    "stats": { "tests": { "total": 2, "failed": 1 } },
+    "executions": [
+      {
+        "item": { "name": "List users", "ancestors": [{ "name": "Users" }] },
+        "assertions": [
+          { "assertion": "status code is 200" },
+          { "assertion": "response has users array" }
+        ]
+      },
+      {
+        "item": { "name": "Create user", "ancestors": [{ "name": "Users" }] },
+        "assertions": [
+          {
+            "assertion": "status code is 201",
+            "error": {
+              "name": "AssertionError",
+              "message": "expected 400 to equal 201",
+              "stack": "at tests (create-user.js:8)"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

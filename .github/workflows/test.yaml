@@ -1,0 +1,27 @@
+# .github/workflows/qa.yml
+name: QA
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Playwright tests
+        run: npx playwright test --reporter=json
+      
+      - name: Run pytest
+        run: pytest --junitxml=junit.xml
+      
+      - name: Unify & enforce quality
+        uses: your-org/testreporthub@v1
+        with:
+          inputs: 'junit.xml playwright-report.json'
+          output: 'unified-report.html'
+          labels: 'org=acme,app=checkout-service,env=${{ github.ref_name }}'
+          enable-quality-gate: 'true'
+          min-pass-rate: '95'
+          max-flake-rate: '5'
+          max-regressions: '0'
+          fail-on-failed: 'true'

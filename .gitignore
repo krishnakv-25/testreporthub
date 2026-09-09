@@ -1,0 +1,39 @@
+cat << 'EOF' > .gitignore
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local databases and reports
+*.db
+report.html
+demo-report.html
+unified-report.html
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# VHS demo artifacts (keep the .tape, not the generated files)
+assets/*.gif
+EOF

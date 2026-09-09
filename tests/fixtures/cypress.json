@@ -1,0 +1,31 @@
+{
+  "stats": { "suites": 1, "tests": 2, "passes": 1, "failures": 1, "pending": 0 },
+  "results": [
+    {
+      "file": "cypress/e2e/checkout.cy.js",
+      "suites": [
+        {
+          "title": "Checkout",
+          "suites": [],
+          "tests": [
+            {
+              "title": "adds item to cart",
+              "state": "passed",
+              "duration": 1200
+            },
+            {
+              "title": "completes payment",
+              "state": "failed",
+              "duration": 3400,
+              "err": {
+                "name": "AssertionError",
+                "message": "expected '.total' to equal '$42.00'",
+                "stack": "at Context.<anonymous> (checkout.cy.js:27:10)"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

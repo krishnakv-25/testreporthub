@@ -1,0 +1,41 @@
+{
+  "stats": { "expected": 1, "unexpected": 1, "flaky": 0, "skipped": 0 },
+  "suites": [
+    {
+      "title": "api",
+      "suites": [],
+      "specs": [
+        {
+          "title": "GET /health",
+          "tests": [
+            {
+              "status": "passed",
+              "results": [
+                { "status": "passed", "duration": 120, "startTime": "2026-09-06T10:00:00.000Z" }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "POST /orders",
+          "tests": [
+            {
+              "status": "failed",
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 840,
+                  "startTime": "2026-09-06T10:00:01.000Z",
+                  "error": {
+                    "message": "Response status 500 != 201",
+                    "stack": "at expect (orders.spec.ts:14)"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

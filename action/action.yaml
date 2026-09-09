@@ -1,0 +1,178 @@
+name: 'TestReportHub'
+description: 'Unify test reports and enforce quality gates across org/app/env hierarchies.'
+author: 'TestReportHub Contributors'
+branding:
+  icon: 'check-circle'
+  color: 'blue'
+
+inputs:
+  # Collection inputs
+  inputs:
+    description: 'Space-separated list of files or directories to ingest.'
+    required: true
+  output:
+    description: 'Path to the output report file.'
+    required: false
+    default: 'unified-report.html'
+  format:
+    description: 'Output format: html, json, or ndjson.'
+    required: false
+    default: 'html'
+
+  # Labels (hierarchy)
+  labels:
+    description: 'Comma-separated key=value labels (e.g., "org=acme,app=checkout,env=staging").'
+    required: false
+    default: ''
+
+  # Quality gate
+  enable-quality-gate:
+    description: 'Run quality gate checks after ingestion.'
+    required: false
+    default: 'false'
+  min-pass-rate:
+    description: 'Minimum pass rate (%) for quality gate.'
+    required: false
+    default: '95'
+  max-flake-rate:
+    description: 'Maximum flaky test rate (%) for quality gate.'
+    required: false
+    default: '5'
+  max-regressions:
+    description: 'Maximum allowed regressions vs previous run.'
+    required: false
+    default: '0'
+
+  # Failure behavior
+  fail-on-failed:
+    description: 'Fail the action if any tests failed.'
+    required: false
+    default: 'false'
+  fail-on-error:
+    description: 'Fail the action if any tests errored.'
+    required: false
+    default: 'false'
+
+  # Persistence
+  db-path:
+    description: 'Path to the SQLite database for historical tracking.'
+    required: false
+    default: 'testpulse.db'
+
+  # Version
+  version:
+    description: 'TestReportHub version to install from PyPI.'
+    required: false
+    default: 'latest'
+
+outputs:
+  report-path:
+    description: 'Path to the generated report'
+    value: ${{ inputs.output }}
+  quality-gate-passed:
+    description: 'Whether the quality gate passed (true/false/na)'
+    value: ${{ steps.quality-gate.outputs.passed }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install TestReportHub
+      shell: bash
+      run: |
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          pip install testreporthub
+        else
+          pip install testreporthub==${{ inputs.version }}
+        fi
+
+    - name: Build CLI command
+      id: build-cmd
+      shell: bash
+      run: |
+        # Parse space-separated inputs into array
+        INPUTS_ARRAY=(${{ inputs.inputs }})
+        
+        COLLECT_CMD="trh collect"
+        for input in "${INPUTS_ARRAY[@]}"; do
+          COLLECT_CMD="$COLLECT_CMD \"$input\""
+        done
+        COLLECT_CMD="$COLLECT_CMD -o ${{ inputs.output }} --format ${{ inputs.format }}"
+        
+        if [ "${{ inputs.fail-on-failed }}" = "true" ]; then
+          COLLECT_CMD="$COLLECT_CMD --fail-on-failed"
+        fi
+        if [ "${{ inputs.fail-on-error }}" = "true" ]; then
+          COLLECT_CMD="$COLLECT_CMD --fail-on-error"
+        fi
+        
+        echo "collect_cmd=$COLLECT_CMD" >> $GITHUB_OUTPUT
+
+    - name: Generate Unified Report
+      shell: bash
+      run: |
+        echo "Running: ${{ steps.build-cmd.outputs.collect_cmd }}"
+        eval ${{ steps.build-cmd.outputs.collect_cmd }}
+
+    - name: Ingest to database (with labels)
+      if: inputs.enable-quality-gate == 'true'
+      shell: bash
+      run: |
+        INPUTS_ARRAY=(${{ inputs.inputs }})
+        INGEST_CMD="trh ingest"
+        for input in "${INPUTS_ARRAY[@]}"; do
+          INGEST_CMD="$INGEST_CMD \"$input\""
+        done
+        INGEST_CMD="$INGEST_CMD --db ${{ inputs.db-path }}"
+        
+        # Parse comma-separated labels
+        if [ -n "${{ inputs.labels }}" ]; then
+          IFS=',' read -ra LABEL_PAIRS <<< "${{ inputs.labels }}"
+          for pair in "${LABEL_PAIRS[@]}"; do
+            INGEST_CMD="$INGEST_CMD --label $pair"
+          done
+        fi
+        
+        echo "Running: $INGEST_CMD"
+        eval $INGEST_CMD
+
+    - name: Run Quality Gate
+      if: inputs.enable-quality-gate == 'true'
+      id: quality-gate
+      shell: bash
+      run: |
+        GATE_CMD="trh quality-gate --db ${{ inputs.db-path }}"
+        GATE_CMD="$GATE_CMD --min-pass-rate ${{ inputs.min-pass-rate }}"
+        GATE_CMD="$GATE_CMD --max-flake-rate ${{ inputs.max-flake-rate }}"
+        GATE_CMD="$GATE_CMD --max-regressions ${{ inputs.max-regressions }}"
+        GATE_CMD="$GATE_CMD --fail-on-breach"
+        
+        # Add label filters
+        if [ -n "${{ inputs.labels }}" ]; then
+          IFS=',' read -ra LABEL_PAIRS <<< "${{ inputs.labels }}"
+          for pair in "${LABEL_PAIRS[@]}"; do
+            GATE_CMD="$GATE_CMD --label $pair"
+          done
+        fi
+        
+        echo "Running: $GATE_CMD"
+        if eval $GATE_CMD; then
+          echo "passed=true" >> $GITHUB_OUTPUT
+        else
+          echo "passed=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+    - name: Upload Report Artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: testreporthub-report-${{ github.run_id }}
+        path: |
+          ${{ inputs.output }}
+          ${{ inputs.db-path }}
+        retention-days: 30
