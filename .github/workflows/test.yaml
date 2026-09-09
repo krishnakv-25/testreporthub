@@ -15,7 +15,7 @@ jobs:
         run: pytest --junitxml=junit.xml
       
       - name: Unify & enforce quality
-        uses: your-org/testreporthub@v1
+        uses: krishnakv-25/testreporthub@v1
         with:
           inputs: 'junit.xml playwright-report.json'
           output: 'unified-report.html'
