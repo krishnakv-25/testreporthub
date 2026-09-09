@@ -1,5 +1,12 @@
 # TestReportHub
+# TestReportHub
 
+[![PyPI version](https://img.shields.io/pypi/v/testreporthub.svg)](https://pypi.org/project/testreporthub/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/testreporthub.svg)](https://pypi.org/project/testreporthub/)
+[![Python versions](https://img.shields.io/pypi/pyversions/testreporthub.svg)](https://pypi.org/project/testreporthub/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**One command. One report. Every framework.**
 **One command. One report. Every framework.**
 
 TestReportHub ingests test execution reports from different frameworks...
